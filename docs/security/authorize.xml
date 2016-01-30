@@ -1,0 +1,52 @@
+<root>
+  <Header>
+    <ApiName>Authorize</ApiName>
+    <Description>API provide permission to available use other api and permission management.</Description>
+  </Header>
+  <Methods>
+    <Method name="login" url="/security/authorize/login" restType="POST">
+      <Description>
+        Login Method for get permission to use other apis.
+      </Description>
+      <Parameters>
+        <Parameter name="userName" defaultValue="admin" dataType="string" />
+        <Parameter name="password" defaultValue="p@ssw0rd" dataType="string"/>
+      </Parameters>
+      <Example>
+        $.post('http://host/security/authorize/login'
+          ,{userName:"admin",password:"admin"}
+          ,function(result){
+            console.log(result);
+        });
+      </Example>
+      <Results>
+        <Result  code="200" status="completed" message="Logon successfully.">
+          {
+            "code": 200,
+            "status": "completed",
+            "message": "Login successfully",
+            "result": {
+                "sessionID": "pzJyZVbmneIDQrxiUePFZJb1kCPAM59f",
+                "ip": "::1",
+                "userName": "admin",
+                "password": "p@ssw0rd",
+                "expiredAt": "2016-01-15T06:45:23.550Z",
+                "meta": {
+                    "revision": 0,
+                    "created": 1452836723550,
+                    "version": 0
+                },
+                "$loki": 1
+            }
+          }
+        </Result>
+        <Result  code="523" status="error" message="Invalid User!"></Result>
+        <Result  code="524" status="error" message="Invalid Logon!"></Result>
+        <Result  code="526" status="error" message="Empty User!"></Result>
+        <Result  code="527" status="error" message="Can't Login!"></Result>
+
+      </Results>
+    </Method>
+
+  </Methods>
+</root>

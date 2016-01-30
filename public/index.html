@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Core API</title>
+
+</head>
+
+<body>
+<div class="ui grid">
+  <div class="three wide column">
+
+     <div class="ui raised segment">
+      <h2 class="ui icon header">
+  <i class="settings icon"></i>
+  <div class="content">
+    Core API Document
+  </div>
+</h2>
+    </div>
+    <div id="menu" class="ui inverted vertical menu" style="width:100%">
+    </div>
+    </div>
+  <div class="thirteen wide column">
+
+       <div id="mainDoc" class="ui raised segment" >
+         <div class="content" >
+          <a class="ui header" href="#link" id="ApiName">Link Header</a>
+          <div id="ApiDesc" class="description">
+          </div>
+        </div>
+    </div>
+
+  </div>
+
+</div>
+
+
+</body>
+<link rel="stylesheet" href="/libs/semantic/semantic.min.css">
+ <script src="/libs/jquery/jquery.min.js"></script>
+<script src="/libs/semantic/semantic.min.js"></script>
+<script src="/libs/jquery/sugar.js"></script>
+  <script src="/libs/jquery/jquerymy.min.js"></script>
+<script>
+$( document ).ready(function() {
+  login(function(modules){
+      console.log(modules);
+      if(modules.children)
+        genTreeMenu(modules.children);
+
+  });
+
+});
+
+function login(callback){
+  var url ="security/authorize/login";
+  var user = {userName:"admin",password:"p@ssw0rd"};
+  $.post(url,user).done(function(result){
+    //console.log(result);
+    if(result.code ==200){
+      getModules(function(modules){
+        //console.log(modules);
+        callback(modules);
+      });
+    }
+    else
+      callback(result);
+  });
+}
+
+function getModules(callback){
+  var url ="docs/docManager/getModules/docs";
+  $.get(url,function(modules){
+    callback(modules);
+  });
+}
+
+function genTreeMenu(item){
+  for(var i =0 ; i <item.length;i++){
+      //console.log(item.children[i].children);
+      bindingModule(item[i]);
+      if(item[i].children)
+        genTreeMenu(item[i].children);
+    }
+}
+
+function bindingModule(module){
+  var ui = "";
+  //console.log(module);
+  if(module.type=="directory"){
+    ui='<div class="item">\
+    <div class="header">{name}</div>\
+    <div id="item_{name}" class="menu">\
+    </div>\
+    </div>'.replace(/{name}/g,module.name);
+    $('#menu').append(ui);
+  }
+  else if(module.type=="file"){
+    var files = module.path.split('/');
+    ui='<a class="item" onclick="readDoc(\'{path}\')">{name}</a>'
+    .replace('{name}',module.name).replace('{path}',module.path);
+    //console.log('134',ui);
+    $('#item_'+files[0]).append(ui);
+  }
+}
+
+function readDoc(fileName){
+//alert(fileName);
+  var url ="docs/docManager/readDoc";
+  $.post(url,{path:'docs/'+fileName},function(result){
+    console.log(result);
+    //if(result.root.Header[0].ApiName[0])
+    var ApiName = result.root.Header[0].ApiName[0];
+    var ApiDesc = result.root.Header[0].Description[0];
+    var Methods = result.root.Methods[0].Method;
+
+      $('#ApiName').text(ApiName);
+      $('#ApiDesc').html(ApiDesc);
+
+      Methods.forEach(function(a){
+        //var name = a["$"].name;
+        genMethod(a);
+        genParameters(a);
+        genExample(a);
+        genResults(a);
+        genTest(a);
+      });
+      console.log(result.root.Methods[0].Method[0]["$"].name);
+    /*console.log(result.root.Header[0].ApiName[0]);
+      $("#frmDetails").my({ui:{
+       "#ApiName": {bind:"root.Header[0].ApiName[0]"}
+     }}, result);*/
+  });
+}
+
+function genMethod(m){
+    var name = m["$"].name;
+  var ui ='<div id="div{Method}" class="ui segment">\
+        <h4 class="ui horizontal divider header">\
+          <i class="tag icon"></i>\
+          Method : {Method}\
+        </h4>\
+        <p>{Description}</p>\
+        </div>'.replace(/{Method}/g, name)
+        .replace('{Description}',m.Description);
+        $('#mainDoc').append(ui);
+}
+function genParameters(m){
+  var ui ='<h4 class="ui horizontal divider header">\
+            <i class="cubes icon"></i>\
+              Parameters</h4>\
+            <table class="ui definition table">\
+            <tbody>';
+  var row ='<tr>\
+      <td class="two wide column">{name}</td>\
+      <td>{dataType}</td>\
+    </tr>';
+    m.Parameters[0].Parameter.forEach(function(p){
+      ui+=row.replace('{name}',p["$"].name)
+       .replace('{dataType}',p["$"].dataType);
+    });
+    ui+=  "</tbody></table>";
+    $('#div' + m["$"].name).append(ui);
+
+}
+
+function genExample(m){
+  var ui ='<h4 class="ui horizontal divider header">\
+<i class="bookmark icon"></i>\
+Example\
+</h4><p>{Example}</p>'.replace('{Example}',m.Example[0]);
+  $('#div' + m["$"].name).append(ui);
+}
+
+function genResults(m){
+  var ui ='<h4 class="ui horizontal divider header">\
+          <i class="browser icon"></i>\
+            Results</h4>\
+          <table class="ui celled padded table">\
+          <thead>\
+    <tr><th class="single line">Code</th>\
+    <th>Status</th>\
+    <th>Message</th>\
+  </tr></thead>\
+          <tbody>';
+var row ='<tr>\
+    <td>{code}</td>\
+    <td>{status}</td>\
+    <td>{message}</td>\
+  </tr>';
+  m.Results[0].Result.forEach(function(p){
+    ui+=row.replace('{code}',p["$"].code)
+     .replace('{status}',p["$"].status)
+     .replace('{message}',p["$"].message);
+  });
+  ui+=  "</tbody></table>";
+  $('#div' + m["$"].name).append(ui);
+}
+
+function genTest(m){
+  var ui ='<h4 class="ui horizontal divider header">\
+          <i class="configure icon"></i>\
+            Test</h4>\
+          <table class="ui definition table">\
+          <tbody>';
+var row ='<tr>\
+    <td class="two wide column">{name}</td>\
+    <td><div class="ui input"><input type="text" value="{defaultValue}" /></div></td>\
+  </tr>';
+  m.Parameters[0].Parameter.forEach(function(p){
+    ui+=row.replace('{name}',p["$"].name)
+     .replace('{defaultValue}',p["$"].defaultValue);
+  });
+  ui+=  "</tbody></table><button id ='btnRun{name}' class='positive ui button'>Run</button>"
+  .replace('{name}',m["$"].name);
+  $('#div' + m["$"].name).append(ui);
+  $('#btnRun'+ m["$"].name).click(function(){
+    //alert('Run');
+    var data ={};
+    m.Parameters[0].Parameter.forEach(function(p){
+      data[p["$"].name] = p["$"].defaultValue;
+   });
+        $.ajax({
+          type: m["$"].restType,
+          url: m["$"].url,
+          data: data,
+          success: function(result){
+            showMessage(m["$"].name,result);
+          },
+          dataType: "json"
+      });
+  });
+}
+
+function showMessage(uiname,result){
+  var messageType ="success";
+
+  if(result.code!=200)
+    messageType ="negative";
+
+  var msg ='<div id="msg" class="ui {messageType} message">\
+  <i class="close icon"></i>\
+  <div class="header">\
+  {Status}\
+  </div>\
+  <p>{Message}</p>\
+</div>'.replace('{messageType}',messageType)
+.replace('{Status}',result.status)
+.replace('{Message}',result.message);
+  $('#msg').remove();
+  $('#div' + uiname).append(msg);
+
+}
+
+
+</script>
+</html>
